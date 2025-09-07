@@ -650,8 +650,8 @@ function App() {
           buttonClass += ' partial';
         }
 
-        const label = `${range.start}–${range.end} (${Math.round(progress)}%)`;
-
+        // const label = `${range.start}–${range.end} (${Math.round(progress)}%)`;
+        const label = `${range.start}–${range.end}`; // <--- без процентов
         return (
           <button
             key={index}
