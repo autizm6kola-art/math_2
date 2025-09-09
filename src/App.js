@@ -51,7 +51,7 @@
 
 //   useEffect(() => {
 //     setLoading(true);
-//     fetch(process.env.PUBLIC_URL + '/tasks.json')
+//     fetch(process.env.PUBLIC_URL + '/tasks_for.json')
 //       .then((res) => res.json())
 //       .then((data) => {
 //         setAllTasks(data);
@@ -244,8 +244,8 @@
 //           buttonClass += ' partial';
 //         }
 
-//         const label = `${range.start}–${range.end} (${Math.round(progress)}%)`;
-
+//         // const label = `${range.start}–${range.end} (${Math.round(progress)}%)`;
+//         const label = `${range.start}–${range.end}`; // <--- без процентов
 //         return (
 //           <button
 //             key={index}
@@ -262,61 +262,6 @@
 //   );
 // }
 
-// // function Task({ task, onCorrect, alreadyCorrect }) {
-// //   const [answer, setAnswer] = React.useState('');
-// //   const [isCorrect, setIsCorrect] = React.useState(null);
-
-// //   useEffect(() => {
-// //     if (alreadyCorrect) {
-// //       setIsCorrect(true);
-// //     }
-// //   }, [alreadyCorrect]);
-
-// //   const handleChange = (e) => {
-// //     setAnswer(e.target.value);
-// //     setIsCorrect(null);
-// //   };
-
-// //   const checkAnswer = () => {
-// //     if (answer.trim().toLowerCase() === task.correctAnswer.toLowerCase()) {
-// //       if (!isCorrect) {
-// //         setIsCorrect(true);
-// //         onCorrect(task.id);
-// //       }
-// //     } else {
-// //       setIsCorrect(false);
-// //     }
-// //   };
-
-// //   const inputStyle = {
-// //     backgroundColor:
-// //       isCorrect === null ? 'white' : isCorrect ? '#c8f7c5' : '#f7c5c5',
-// //     padding: '5px',
-// //     marginRight: '10px',
-// //   };
-
-// //   return (
-// //     <div style={{ marginBottom: '20px' }}>
-// //       <p>
-// //         <strong>Задача {task.id}</strong>
-// //       </p>
-// //       <p>{task.text}</p>
-
-// //       <input
-// //         type="text"
-// //         value={answer}
-// //         onChange={handleChange}
-// //         style={inputStyle}
-// //         placeholder="Введите ответ"
-// //         disabled={isCorrect === true}
-// //       />
-// //       <button onClick={checkAnswer} disabled={isCorrect === true}>
-// //         Проверить
-// //       </button>
-// //     </div>
-// //   );
-// // }
-
 // function Task({ task, onCorrect, alreadyCorrect }) {
 //   const [answer, setAnswer] = React.useState('');
 //   const [isCorrect, setIsCorrect] = React.useState(null);
@@ -327,42 +272,13 @@
 //     }
 //   }, [alreadyCorrect]);
 
-//   // Функция для проверки равенства ответов
-//   const compareAnswers = (userAns, correctAns) => {
-//     // Если правильный ответ — массив
-//     if (Array.isArray(correctAns)) {
-//       // Преобразуем ответ пользователя в массив чисел, разделяя по запятым, пробелам
-//       const userArr = userAns
-//         .split(/[\s,]+/)
-//         .map(s => s.trim())
-//         .filter(s => s.length > 0)
-//         .map(Number)
-//         .filter(n => !isNaN(n));
-      
-//       // Сравним длины
-//       if (userArr.length !== correctAns.length) return false;
-
-//       // Сравним элементы (без учёта порядка)
-//       const sortedUser = [...userArr].sort();
-//       const sortedCorrect = [...correctAns].sort();
-
-//       for (let i = 0; i < sortedUser.length; i++) {
-//         if (sortedUser[i] !== sortedCorrect[i]) return false;
-//       }
-//       return true;
-//     } else {
-//       // Правильный ответ строка или число — сравним как строки, игнорируя пробелы и регистр
-//       return userAns.trim().toLowerCase() === String(correctAns).trim().toLowerCase();
-//     }
-//   };
-
 //   const handleChange = (e) => {
 //     setAnswer(e.target.value);
 //     setIsCorrect(null);
 //   };
 
 //   const checkAnswer = () => {
-//     if (compareAnswers(answer, task.correctAnswer)) {
+//     if (answer.trim().toLowerCase() === task.correctAnswer.toLowerCase()) {
 //       if (!isCorrect) {
 //         setIsCorrect(true);
 //         onCorrect(task.id);
@@ -401,9 +317,8 @@
 //   );
 // }
 
-
-
 // export default App;
+
 import './App.css';
 import React, { useState, useEffect } from 'react';
 
@@ -448,12 +363,10 @@ function App() {
   const [allTasks, setAllTasks] = useState([]);
   const [ranges, setRanges] = useState([]);
   const [progressByRange, setProgressByRange] = useState({});
+  const [totalCorrect, setTotalCorrect] = useState(0);
   const [loading, setLoading] = useState(false);
 
-  // Новый стейт для общего прогресса
-  const [totalCorrect, setTotalCorrect] = useState(0);
-
-  const getStorageKey = (range) => `progress_${range.start}_${range.end}`;
+  const getTaskKey = (id) => `task_answer_${id}`;
 
   useEffect(() => {
     setLoading(true);
@@ -463,12 +376,11 @@ function App() {
         setAllTasks(data);
         setLoading(false);
 
-        // Формируем диапазоны по 10 заданий
         const sorted = [...data].sort((a, b) => a.id - b.id);
         const dynamicRanges = [];
 
-        for (let i = 0; i < sorted.length; i += 10) {
-          const chunk = sorted.slice(i, i + 10);
+        for (let i = 0; i < sorted.length; i += 6) {
+          const chunk = sorted.slice(i, i + 6);
           if (chunk.length > 0) {
             dynamicRanges.push({
               start: chunk[0].id,
@@ -485,64 +397,88 @@ function App() {
       });
   }, []);
 
-  // Загружаем прогресс по каждому диапазону
+  useEffect(() => {
+  const migrateOldProgress = () => {
+    const keys = Object.keys(localStorage);
+    const oldProgressKeys = keys.filter(key => key.startsWith("progress_"));
+
+    oldProgressKeys.forEach((key) => {
+      try {
+        const data = JSON.parse(localStorage.getItem(key));
+        if (data && data.answeredTasks) {
+          Object.keys(data.answeredTasks).forEach((taskId) => {
+            localStorage.setItem(`task_answer_${taskId}`, "true");
+          });
+        }
+        // Не удаляем старые ключи, на всякий случай:
+        // localStorage.removeItem(key);
+      } catch (e) {
+        console.error("Ошибка при миграции из", key, e);
+      }
+    });
+  };
+
+  migrateOldProgress();
+}, []);
+
+
+  // Прогресс по диапазонам
   useEffect(() => {
     const progress = {};
 
     ranges.forEach((range) => {
-      const key = getStorageKey(range);
-      const saved = localStorage.getItem(key);
-      const totalInRange = allTasks.filter(
+      const tasksInRange = allTasks.filter(
         (t) => t.id >= range.start && t.id <= range.end
-      ).length;
+      );
 
-      if (saved && totalInRange > 0) {
-        const parsed = JSON.parse(saved);
-        const percent = (parsed.correctCount / totalInRange) * 100;
-        progress[key] = percent;
-      } else {
-        progress[key] = 0;
-      }
+      const totalInRange = tasksInRange.length;
+      let correctInRange = 0;
+
+      tasksInRange.forEach((task) => {
+        const saved = localStorage.getItem(getTaskKey(task.id));
+        if (saved === 'true') correctInRange++;
+      });
+
+      const percent =
+        totalInRange > 0 ? (correctInRange / totalInRange) * 100 : 0;
+      progress[`${range.start}_${range.end}`] = percent;
     });
 
     setProgressByRange(progress);
   }, [ranges, allTasks]);
 
-  // Новый useEffect для подсчёта общего количества решённых задач
+  // Общий прогресс
   useEffect(() => {
-    if (ranges.length === 0) {
-      setTotalCorrect(0);
-      return;
-    }
+    const count = allTasks.reduce((acc, task) => {
+      const saved = localStorage.getItem(getTaskKey(task.id));
+      return acc + (saved === 'true' ? 1 : 0);
+    }, 0);
 
-    let sum = 0;
+    setTotalCorrect(count);
+  }, [allTasks]);
 
-    ranges.forEach((range) => {
-      const key = getStorageKey(range);
-      const saved = localStorage.getItem(key);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        sum += parsed.correctCount || 0;
-      }
-    });
-
-    setTotalCorrect(sum);
-  }, [ranges]);
-
+  // Прогресс по выбранному диапазону
   useEffect(() => {
     if (selectedRange) {
-      const key = getStorageKey(selectedRange);
-      const saved = localStorage.getItem(key);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        setCorrectCount(parsed.correctCount);
-        setAnsweredTasks(parsed.answeredTasks);
-      } else {
-        setCorrectCount(0);
-        setAnsweredTasks({});
-      }
+      const tasksInRange = allTasks.filter(
+        (t) => t.id >= selectedRange.start && t.id <= selectedRange.end
+      );
+
+      const answered = {};
+      let correct = 0;
+
+      tasksInRange.forEach((task) => {
+        const saved = localStorage.getItem(getTaskKey(task.id));
+        if (saved === 'true') {
+          answered[task.id] = true;
+          correct++;
+        }
+      });
+
+      setAnsweredTasks(answered);
+      setCorrectCount(correct);
     }
-  }, [selectedRange]);
+  }, [selectedRange, allTasks]);
 
   const handleCorrectAnswer = (taskId) => {
     if (!answeredTasks[taskId]) {
@@ -552,14 +488,7 @@ function App() {
       setAnsweredTasks(updatedTasks);
       setCorrectCount(newCount);
 
-      const key = getStorageKey(selectedRange);
-      localStorage.setItem(
-        key,
-        JSON.stringify({
-          correctCount: newCount,
-          answeredTasks: updatedTasks,
-        })
-      );
+      localStorage.setItem(getTaskKey(taskId), 'true');
     }
   };
 
@@ -631,16 +560,15 @@ function App() {
 
       <h1 style={{ margin: '0 0 10px 230px' }}>ЗАДАЧИ</h1>
 
-      {/* Общий прогресс под заголовком */}
-    <div style={{ marginBottom: '30px' }}>
-      <ProgressBar correct={totalCorrect} total={allTasks.length} />
-      <p style={{ textAlign: 'center', fontWeight: 'bold' }}>
-        Решено {totalCorrect} задач из {allTasks.length}
-      </p>
-    </div>
+      <div style={{ marginBottom: '30px' }}>
+        <ProgressBar correct={totalCorrect} total={allTasks.length} />
+        <p style={{ textAlign: 'center', fontWeight: 'bold' }}>
+          Решено {totalCorrect} задач из {allTasks.length}
+        </p>
+      </div>
 
       {ranges.map((range, index) => {
-        const key = getStorageKey(range);
+        const key = `${range.start}_${range.end}`;
         const progress = progressByRange[key] || 0;
 
         let buttonClass = 'range-button';
@@ -650,8 +578,7 @@ function App() {
           buttonClass += ' partial';
         }
 
-        // const label = `${range.start}–${range.end} (${Math.round(progress)}%)`;
-        const label = `${range.start}–${range.end}`; // <--- без процентов
+        const label = `${range.start}–${range.end}`;
         return (
           <button
             key={index}
@@ -662,8 +589,6 @@ function App() {
           </button>
         );
       })}
-
-      
     </div>
   );
 }
