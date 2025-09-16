@@ -58,8 +58,8 @@ function App() {
         const sorted = [...data].sort((a, b) => a.id - b.id);
         const dynamicRanges = [];
 
-        for (let i = 0; i < sorted.length; i += 6) {
-          const chunk = sorted.slice(i, i + 6);
+        for (let i = 0; i < sorted.length; i += 4) {
+          const chunk = sorted.slice(i, i + 4);
           if (chunk.length > 0) {
             dynamicRanges.push({
               start: chunk[0].id,
