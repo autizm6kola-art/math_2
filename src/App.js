@@ -29,7 +29,7 @@ function ProgressBar({ correct, total }) {
 
 function BackButton() {
   return (
-    <a href="https://autizm6kola-art.github.io/svet/" className="back-link">
+    <a href="https://autizm6kola-art.github.io/rumpel/" className="back-link">
       ← Назад
     </a>
   );
@@ -58,8 +58,8 @@ function App() {
         const sorted = [...data].sort((a, b) => a.id - b.id);
         const dynamicRanges = [];
 
-        for (let i = 0; i < sorted.length; i += 4) {
-          const chunk = sorted.slice(i, i + 4);
+        for (let i = 0; i < sorted.length; i += 2) {
+          const chunk = sorted.slice(i, i + 2);
           if (chunk.length > 0) {
             dynamicRanges.push({
               start: chunk[0].id,
